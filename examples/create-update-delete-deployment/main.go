@@ -33,7 +33,30 @@ import (
 	"k8s.io/client-go/util/retry"
 	// Uncomment the following line to load the gcp plugin (only required to authenticate against GKE clusters).
 	// _ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
+
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/kubernetes/pkg/printers"
+
+	"bytes"
+	"errors"
 )
+
+func PrintYamlObj(obj runtime.Object) (string,error) {
+	if ( nil == obj ) {
+		return "", errors.New("paramter obj is nil")
+	}
+
+	var print printers.ResourcePrinter = &printers.YAMLPrinter{}
+
+	var buf bytes.Buffer
+	err :=print.PrintObj(obj,&buf)
+
+	if err == nil {
+		return buf.String(), nil
+	} else {
+		return "", err
+	}
+}
 
 func main() {
 	var kubeconfig *string
@@ -87,12 +110,22 @@ func main() {
 	}
 
 	// Create Deployment
-	fmt.Println("Creating deployment...")
+	fmt.Println("Creating deployment1...")
 	result, err := deploymentsClient.Create(deployment)
 	if err != nil {
 		panic(err)
 	}
 	fmt.Printf("Created deployment %q.\n", result.GetObjectMeta().GetName())
+
+	result.Kind = "Deployment"
+	result.APIVersion = "apps/v1beta1"
+
+	textStr,err := PrintYamlObj(result)
+		if err != nil {
+		panic(err)
+	}
+
+	fmt.Printf("Convert deployment:\n%s", textStr)
 
 	// Update Deployment
 	prompt()
