@@ -110,7 +110,7 @@ func main() {
 	}
 
 	// Create Deployment
-	fmt.Println("Creating deployment1...")
+	fmt.Println("Creating1 deployment1...")
 	result, err := deploymentsClient.Create(deployment)
 	if err != nil {
 		panic(err)

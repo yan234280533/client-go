@@ -78,7 +78,7 @@ func main() {
 		panic(err)
 	}
 
-	deploymentsClient := clientset.ExtensionsV1beta1().Deployments("default")
+	deploymentsClient := clientset.ExtensionsV1beta1().Deployments(apiv1.NamespaceDefault)
 
 	deployment := &extensionsv1beta1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
