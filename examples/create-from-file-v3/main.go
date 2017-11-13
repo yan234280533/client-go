@@ -204,6 +204,7 @@ func PrintObjectType(obj runtime.Object) (error){
 	return nil
 }
 
+
 func read3(path string) string {
     fi, err := os.Open(path)
     if err != nil {
