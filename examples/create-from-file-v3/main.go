@@ -32,6 +32,9 @@ import (
 	extensionsv1beta1 "k8s.io/api/extensions/v1beta1"
 	"k8s.io/kubernetes/pkg/apis/extensions"
 
+	rbrcv1beta1 "k8s.io/api/rbac/v1beta1"
+	"k8s.io/kubernetes/pkg/apis/rbac"
+
 	cmdutil "k8s.io/kubernetes/pkg/kubectl/cmd/util"
 	"k8s.io/client-go/tools/clientcmd"
 	restclient "k8s.io/client-go/rest"
@@ -154,12 +157,44 @@ func PrintObjectType(obj runtime.Object) (error){
 		fmt.Printf("Kind is api.Service\n")
 		fmt.Printf("typed:%s", typed.Kind)
 		return nil
+	case *apiv1.ServiceAccount:
+		fmt.Printf("Kind is apiv1.ServiceAccount\n")
+		fmt.Printf("typed:%s", typed.Kind)
+		return nil
+	case *api.ServiceAccount:
+		fmt.Printf("Kind is api.ServiceAccount\n")
+		fmt.Printf("typed:%s", typed.Kind)
+		return nil
+	case *apiv1.Secret:
+		fmt.Printf("Kind is apiv1.Secret\n")
+		fmt.Printf("typed:%s", typed.Kind)
+		return nil
+	case *api.Secret:
+		fmt.Printf("Kind is api.Secret\n")
+		fmt.Printf("typed:%s", typed.Kind)
+		return nil
 	case *extensions.DaemonSet:
 		fmt.Printf("Kind is extensions.DaemonSet\n")
 		fmt.Printf("typed:%s", typed.Kind)
 		return nil
 	case *extensionsv1beta1.DaemonSet:
 		fmt.Printf("Kind is extensionsv1beta1.DaemonSet\n")
+		fmt.Printf("typed:%s", typed.Kind)
+		return nil
+	case *rbac.Role:
+		fmt.Printf("Kind is rbac.Role\n")
+		fmt.Printf("typed:%s", typed.Kind)
+		return nil
+	case *rbrcv1beta1.Role:
+		fmt.Printf("Kind is rbrcv1beta1.Role\n")
+		fmt.Printf("typed:%s", typed.Kind)
+		return nil
+	case *rbac.RoleBinding:
+		fmt.Printf("Kind is rbac.RoleBinding\n")
+		fmt.Printf("typed:%s", typed.Kind)
+		return nil
+	case *rbrcv1beta1.RoleBinding:
+		fmt.Printf("Kind is rbrcv1beta1.RoleBinding\n")
 		fmt.Printf("typed:%s", typed.Kind)
 		return nil
 	default:
