@@ -71,6 +71,9 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+
+	fmt.Printf("config %#v \n",config)
+
 	clientset, err := kubernetes.NewForConfig(config)
 	if err != nil {
 		panic(err)
