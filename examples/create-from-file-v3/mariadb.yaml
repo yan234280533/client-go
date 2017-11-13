@@ -1,0 +1,58 @@
+﻿apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  annotations:
+    description: mariadb服务
+  creationTimestamp: null
+  name: mariadb
+  namespace: default
+spec:
+  replicas: 1
+  revisionHistoryLimit: 5
+  selector: {}
+  strategy: {}
+  template:
+    metadata:
+      creationTimestamp: null
+    spec:
+      containers:
+      - env:
+        - name: MYSQL_ROOT_PASSWORD
+          value: root
+        image: mariadb:latest
+        imagePullPolicy: Always
+        name: mariadb
+        resources:
+          requests:
+            cpu: 200m
+        securityContext:
+          privileged: false
+        volumeMounts:
+        - mountPath: /var/lib/mysql
+          name: vol
+      serviceAccountName: ""
+      volumes:
+      - name: vol
+        qcloudCbs:
+          cbsDiskId: aaa
+          fsType: ext4
+status: {}
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  creationTimestamp: null
+  name: mariadb
+  namespace: default
+spec:
+  ports:
+  - name: tcp-3306-3306-nh6kj
+    nodePort: 0
+    port: 3306
+    protocol: TCP
+    targetPort: 3306
+  selector: {}
+  type: LoadBalancer
+status:
+  loadBalancer: {}
