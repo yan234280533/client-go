@@ -36,6 +36,7 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 	restclient "k8s.io/client-go/rest"
 	"k8s.io/kubernetes/pkg/kubectl/resource"
+	"k8s.io/kubernetes/pkg/api"
 
 	"k8s.io/client-go/util/homedir"
 	"path/filepath"
@@ -143,6 +144,22 @@ func PrintObjectType(obj runtime.Object) (error){
 		return nil
 	case *extensions.Deployment:
 		fmt.Printf("Kind is extensions.Deployment\n")
+		fmt.Printf("typed:%s", typed.Kind)
+		return nil
+	case *apiv1.Service:
+		fmt.Printf("Kind is apiv1.Service\n")
+		fmt.Printf("typed:%s", typed.Kind)
+		return nil
+	case *api.Service:
+		fmt.Printf("Kind is api.Service\n")
+		fmt.Printf("typed:%s", typed.Kind)
+		return nil
+	case *extensions.DaemonSet:
+		fmt.Printf("Kind is extensions.DaemonSet\n")
+		fmt.Printf("typed:%s", typed.Kind)
+		return nil
+	case *extensionsv1beta1.DaemonSet:
+		fmt.Printf("Kind is extensionsv1beta1.DaemonSet\n")
 		fmt.Printf("typed:%s", typed.Kind)
 		return nil
 	default:
