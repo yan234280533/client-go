@@ -33,6 +33,7 @@ import (
 	"k8s.io/kubernetes/pkg/apis/extensions"
 
 	rbrcv1beta1 "k8s.io/api/rbac/v1beta1"
+	rbrcv1alpha1 "k8s.io/api/rbac/v1alpha1"
 	"k8s.io/kubernetes/pkg/apis/rbac"
 
 	cmdutil "k8s.io/kubernetes/pkg/kubectl/cmd/util"
@@ -189,6 +190,10 @@ func PrintObjectType(obj runtime.Object) (error){
 		fmt.Printf("Kind is rbrcv1beta1.Role\n")
 		fmt.Printf("typed:%s", typed.Kind)
 		return nil
+	case *rbrcv1alpha1.Role:
+		fmt.Printf("Kind is rbrcv1alpha1.Role\n")
+		fmt.Printf("typed:%s", typed.Kind)
+		return nil
 	case *rbac.RoleBinding:
 		fmt.Printf("Kind is rbac.RoleBinding\n")
 		fmt.Printf("typed:%s", typed.Kind)
@@ -197,13 +202,16 @@ func PrintObjectType(obj runtime.Object) (error){
 		fmt.Printf("Kind is rbrcv1beta1.RoleBinding\n")
 		fmt.Printf("typed:%s", typed.Kind)
 		return nil
+	case *rbrcv1alpha1.RoleBinding:
+		fmt.Printf("Kind is rbrcv1alpha1.RoleBinding\n")
+		fmt.Printf("typed:%s", typed.Kind)
+		return nil
 	default:
 		fmt.Printf("Unsupported kind when set object type: %v\n", obj)
 		return fmt.Errorf("Unsupported kind when set object type\n")
 	}
 	return nil
 }
-
 
 func read3(path string) string {
     fi, err := os.Open(path)
