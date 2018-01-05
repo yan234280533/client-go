@@ -51,11 +51,13 @@ const (
 const (
 	VASP_SERVICE_NAME = "vasp"
 	VASP_IMAGE = "ccr.ccs.tencentyun.com/xtalpi/vasp:std-ssh"
+	VASP_REPLICAS = 2
 	VASP_MASTER_SERVICE_NAME = "vasp-master"
 	VASP_MASTER_IMAGE = "ccr.ccs.tencentyun.com/xtalpi/vasp:std"
 	VASP_CONFIGMAP_NAME = "vasp-config"
 	VASP_HOSTFILE_NAME = "hostsfile"
-	VASP_HOSTFILE_VOL_NAME = "hostsfileVol"
+	VASP_HOSTFILE_VOL_NAME = "hostsfilevol"
+
 )
 
 /*func generateApiListOptRegex(labelMap map[string]string, fieldMap map[string]string, labelsRegex string) (apiv1.ListOptions, error) {
@@ -143,11 +145,12 @@ func main() {
 		panic(err)
 	}
 
-	namespace := apiv1.NamespaceDefault
+	namespace := "a1"
 
 	//创建vasp的服务
 	deploymentsClient := clientset.ExtensionsV1beta1().Deployments(namespace)
 	deployLabels := map[string]string{LABEL_APP: VASP_SERVICE_NAME,}
+	imageSecret    := apiv1.LocalObjectReference{Name:"qcloudregistrykey"}
 
 	deployment := &extensionsv1beta1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
@@ -155,7 +158,7 @@ func main() {
 			Labels: deployLabels,
 		},
 		Spec: extensionsv1beta1.DeploymentSpec{
-			Replicas: int32Ptr(2),
+			Replicas: int32Ptr(VASP_REPLICAS),
 			Selector: &metav1.LabelSelector{
 				MatchLabels: map[string]string{LABEL_APP: VASP_SERVICE_NAME},
 			},
@@ -177,19 +180,20 @@ func main() {
 							},
 						},
 					},
+					ImagePullSecrets:[]apiv1.LocalObjectReference{imageSecret},
 				},
 			},
 		},
 	}
 
 	// Create Vasp Deployment
-	fmt.Println("Creating %s deployment...",VASP_SERVICE_NAME)
+	fmt.Printf("Creating %s deployment...\n",VASP_SERVICE_NAME)
 	_, err = deploymentsClient.Create(deployment)
 	if err != nil {
 		panic(err)
 	}
 
-	fmt.Println("Creat deployment %s succeed...",VASP_SERVICE_NAME)
+	fmt.Printf("Creat deployment %s succeed...\n",VASP_SERVICE_NAME)
 
 	//获取Pod列表，获取Pod 的IP
 	podClient := clientset.Core().Pods(namespace)
@@ -206,20 +210,18 @@ func main() {
 	var ipList []string
 	var allRuning bool = false
 	for j := 0; j<100 ; j++ {
-		time.Sleep(30)
+		time.Sleep(60)
+
+		fmt.Printf("list pod loop(%d) \n",j)
 
 		result, err := podClient.List(opt)
 		if err != nil {
 			panic(err)
 		}
 
-		for i := 0; i < len(result.Items); i++ {
-			fmt.Println("pod: %s, status: %s, IP %s", result.Items[i].Name, result.Items[i].Status,result.Items[i].Status.PodIP)
-		}
-
 		ipList = []string{}
 		for i := 0; i < len(result.Items); i++ {
-			if (result.Items[i].Status.Phase != apiv1.PodRunning) && (result.Items[i].Status.PodIP != "") {
+			if (result.Items[i].Status.Phase != apiv1.PodRunning) || (result.Items[i].Status.PodIP == "") {
                                 allRuning = false
 				break;
 			}else{
@@ -228,14 +230,16 @@ func main() {
 			}
 		}
 
+		fmt.Printf("allRuning is %v, num %d \n",allRuning,len(ipList))
+
 		if allRuning {
-			break;
-		} else {
-			continue
+			if len(ipList) == VASP_REPLICAS {
+				break;
+			}
 		}
 	}
 
-	fmt.Println("list pod succeed,%s",strings.Join(ipList,","))
+	fmt.Printf("list pod succeed,%s\n, len(%d)",strings.Join(ipList,","),len(ipList))
 
 	//将获取IP转换成对应的configmap
 	configmap := apiv1.ConfigMap{}
@@ -257,7 +261,7 @@ func main() {
 		panic(err)
 	}
 
-	fmt.Println("create configmap %s succeed",VASP_CONFIGMAP_NAME)
+	fmt.Printf("create configmap %s succeed\n",VASP_CONFIGMAP_NAME)
 
 	//创建vasp-master的服务，启动执行任务
 	deployMasterLabels := map[string]string{LABEL_APP: VASP_SERVICE_NAME,}
@@ -266,10 +270,10 @@ func main() {
 		panic(err)
 	}
 
-	fmt.Println("get addr ip  succeed,%s",ipAddr)
+	fmt.Printf("get addr ip  succeed,%s\n",ipAddr)
 
 	var volume apiv1.Volume
-	volume.Name = VASP_CONFIGMAP_NAME
+	volume.Name = VASP_HOSTFILE_VOL_NAME
 
 	var mode int32
 	mode = 0777
@@ -287,6 +291,7 @@ func main() {
 				},
 			},
 		},
+
 	}
 
 	var volumeMount = apiv1.VolumeMount{
@@ -302,7 +307,7 @@ func main() {
 			Labels: deployMasterLabels,
 		},
 		Spec: extensionsv1beta1.DeploymentSpec{
-			Replicas: int32Ptr(2),
+			Replicas: int32Ptr(1),
 			Selector: &metav1.LabelSelector{
 				MatchLabels: deployMasterLabels,
 			},
@@ -315,25 +320,26 @@ func main() {
 						{
 							Name:  VASP_MASTER_SERVICE_NAME,
 							Image: VASP_MASTER_IMAGE,
-							Command: []string{"/usr/vasp/bin/mpirun"},
+							Command: []string{"sleep"},
+                                                        Args: []string{"36000"},
 							VolumeMounts: []apiv1.VolumeMount{volumeMount},
-                                                        Args: []string{"-np","2","-f",fmt.Sprintf("/mnt/%s",VASP_HOSTFILE_NAME),"-localhost",ipAddr,"/usr/vasp/bin/vasp"},
 						},
 					},
 					Volumes:[]apiv1.Volume{volume},
+					ImagePullSecrets:[]apiv1.LocalObjectReference{imageSecret},
 				},
 			},
 		},
 	}
 
 	// Create Vasp Master Deployment
-	fmt.Println("Creating %s deployment...",VASP_MASTER_SERVICE_NAME)
+	fmt.Printf("Creating %s deployment...\n",VASP_MASTER_SERVICE_NAME)
 	_, err = deploymentsClient.Create(deploymentMaster)
 	if err != nil {
 		panic(err)
 	}
 
-	fmt.Println("Creat deployment %s succeed...",VASP_MASTER_SERVICE_NAME)
+	fmt.Printf("Creat deployment %s succeed...\n",VASP_MASTER_SERVICE_NAME)
 
 	return
 }
