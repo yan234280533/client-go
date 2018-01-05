@@ -24,9 +24,10 @@ import (
 	"strings"
 	"net"
 	yaml "github.com/davidje13/yaml.v2"
+	"errors"
 
 	//appsv1beta1 "k8s.io/api/apps/v1beta1"
-	apiv1 "k8s.io/api/core/v1"
+	apiv1 "k8s.io/client-go/pkg/api/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
@@ -34,10 +35,12 @@ import (
 	// Uncomment the following line to load the gcp plugin (only required to authenticate against GKE clusters).
 	// _ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 
-	extensionsv1beta1 "k8s.io/api/extensions/v1beta1"
+	//extensionsv1beta1 "k8s.io/api/extensions/v1beta1"
+	//appsv1beta1 "k8s.io/client-go/pkg/apis/apps/v1beta1"
+	extensionsv1beta1 "k8s.io/client-go/pkg/apis/extensions/v1beta1"
 
-	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/apimachinery/pkg/fields"
+	//"k8s.io/apimachinery/pkg/labels"
+	//"k8s.io/apimachinery/pkg/fields"
 	"time"
 )
 
@@ -55,7 +58,7 @@ const (
 	VASP_HOSTFILE_VOL_NAME = "hostsfileVol"
 )
 
-func generateApiListOptRegex(labelMap map[string]string, fieldMap map[string]string, labelsRegex string) (apiv1.ListOptions, error) {
+/*func generateApiListOptRegex(labelMap map[string]string, fieldMap map[string]string, labelsRegex string) (apiv1.ListOptions, error) {
 	labelSelector := labels.Everything()
 	fieldSelector := fields.Everything()
 	var opt apiv1.ListOptions
@@ -81,7 +84,7 @@ func generateApiListOptRegex(labelMap map[string]string, fieldMap map[string]str
 		FieldSelector: fieldSelector,
 	}
 	return opt, nil
-}
+}*/
 
 func MarshalConfigMapData(configValueMap map[string]string)  (string, error)  {
 	var strYaml string
@@ -94,7 +97,7 @@ func MarshalConfigMapData(configValueMap map[string]string)  (string, error)  {
 	strByte, err := yaml.Marshal(configValueMap)
 	if err != nil {
 		fmt.Errorf("Marshal the strMap failed, error=%s.", err.Error())
-		return strYaml, fmt.Sprintf("Marshal the strMap failed, error=%s.", err.Error())
+		return strYaml, errors.New(fmt.Sprintf("Marshal the strMap failed, error=%s.", err.Error()))
 	}
 
 	strYaml = string(strByte)
@@ -107,7 +110,7 @@ func getLocalIp()(string,error) {
 	addrSlice, err := net.InterfaceAddrs()
 	if nil != err {
 		fmt.Errorf("Get local IP addr failed,%s",err.Error())
-		return ipAddr,fmt.Sprintf("Get local IP addr failed,%s",err.Error())
+		return ipAddr,errors.New(fmt.Sprintf("Get local IP addr failed,%s",err.Error()))
 	}
 	for _, addr := range addrSlice {
 		if ipnet, ok := addr.(*net.IPNet); ok && !ipnet.IP.IsLoopback() {
@@ -117,7 +120,7 @@ func getLocalIp()(string,error) {
 			}
 		}
 	}
-	return ipAddr,fmt.Sprintf("Not found local IP addr")
+	return ipAddr,errors.New(fmt.Sprintf("Not found local IP addr"))
 }
 
 func int32Ptr(i int32) *int32 { return &i }
@@ -191,13 +194,14 @@ func main() {
 	//获取Pod列表，获取Pod 的IP
 	podClient := clientset.Core().Pods(namespace)
 
-	strRegex := fmt.Sprintf("%s in (%s)",LABEL_APP,VASP_SERVICE_NAME)
-	fmt.Println("regex: %s",strRegex)
+	//strRegex := fmt.Sprintf("%s in (%s)",LABEL_APP,VASP_SERVICE_NAME)
+	//fmt.Println("regex: %s",strRegex)
 
-	opt, err := generateApiListOptRegex(nil, nil, strRegex)
+	/*opt, err := generateApiListOptRegex(nil, nil, strRegex)
 	if err != nil {
 		panic(err)
-	}
+	}*/
+	opt := metav1.ListOptions{}
 
 	var ipList []string
 	var allRuning bool = false
@@ -215,7 +219,7 @@ func main() {
 
 		ipList = []string{}
 		for i := 0; i < len(result.Items); i++ {
-			if (result.Items[i].Status != apiv1.PodRunning) && (result.Items[i].Status.PodIP != "") {
+			if (result.Items[i].Status.Phase != apiv1.PodRunning) && (result.Items[i].Status.PodIP != "") {
                                 allRuning = false
 				break;
 			}else{
@@ -244,15 +248,11 @@ func main() {
 
 	dateMaps := make(map[string]string, 0)
 	dateMaps[VASP_HOSTFILE_NAME] = strings.Join(ipList,"\n")
-	dataStr, err := MarshalConfigMapData(dateMaps)
-	if err != nil {
-		panic(err)
-	}
-	configmap.Data = dataStr
+	configmap.Data = dateMaps
 
 	//创建vasp-master服务对应的configmap
 	configClient := clientset.Core().ConfigMaps(namespace)
-	_, err = configClient.Create(configmap)
+	_, err = configClient.Create(&configmap)
 	if err != nil {
 		panic(err)
 	}
@@ -335,5 +335,5 @@ func main() {
 
 	fmt.Println("Creat deployment %s succeed...",VASP_MASTER_SERVICE_NAME)
 
-	return 0
+	return
 }
