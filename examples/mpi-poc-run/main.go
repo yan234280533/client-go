@@ -53,7 +53,7 @@ const (
 	VASP_IMAGE = "ccr.ccs.tencentyun.com/xtalpi/vasp:std-ssh"
 	VASP_REPLICAS = 2
 	VASP_MASTER_SERVICE_NAME = "vasp-master"
-	VASP_MASTER_IMAGE = "ccr.ccs.tencentyun.com/xtalpi/vasp:std"
+	VASP_MASTER_IMAGE = "ccr.ccs.tencentyun.com/xtalpi/vasp:std-ssh-master4"
 	VASP_CONFIGMAP_NAME = "vasp-config"
 	VASP_HOSTFILE_NAME = "hostsfile"
 	VASP_HOSTFILE_VOL_NAME = "hostsfilevol"
@@ -320,8 +320,8 @@ func main() {
 						{
 							Name:  VASP_MASTER_SERVICE_NAME,
 							Image: VASP_MASTER_IMAGE,
-							Command: []string{"sleep"},
-                                                        Args: []string{"36000"},
+							Command: []string{"/bin/sh"},
+                                                        Args: []string{"-c","/usr/vasp/bin/start.sh 6"},
 							VolumeMounts: []apiv1.VolumeMount{volumeMount},
 						},
 					},
